@@ -153,12 +153,12 @@ class Chat:
             if len(invalid_characters):
                 self.logger.log(logging.WARNING, f'Invalid characters found! : {invalid_characters}')
                 text[i] = apply_character_map(t)
-                
-        if not skip_refine_text:
-            text_tokens = refine_text(self.pretrain_models, text, **params_refine_text)['ids']
-            text_tokens = [i[i < self.pretrain_models['tokenizer'].convert_tokens_to_ids('[break_0]')] for i in text_tokens]
-            text = self.pretrain_models['tokenizer'].batch_decode(text_tokens)
-            if refine_text_only:
+        # self.pretrain_models['tokenizer'].convert_tokens_to_ids('[break_0]') 21147
+        if not skip_refine_text:  # skip_refine_text False
+            text_tokens = refine_text(self.pretrain_models, text, **params_refine_text)['ids']  # results: ids{list:1}  [100,], attentions{list:101}, hiddens{list, 0}
+            text_tokens = [i[i < self.pretrain_models['tokenizer'].convert_tokens_to_ids('[break_0]')] for i in text_tokens]  # list [97,]
+            text = self.pretrain_models['tokenizer'].batch_decode(text_tokens)  # add uv_break
+            if refine_text_only:  # 0
                 return text
         # self.pretrain_models  dict:  keys: vocos dvae gpt spk_stat decoder tokenizer  lens = 6
         text = [params_infer_code.get('prompt', '') + i for i in text] # ['[speed_5]很 多 人 觉 得 [uv_break] 哎 [uv_break] ， 想 把 英 语 学 的 好 [uv_break] ， 这 个 单 词 就 是 一 个 不 能 少 。 一 个 个 的 [uv_break] 是 死 背 单 词 [uv_break] 。 那 知 道 的 单 词 多 了 当 然 会 是 好 事 。 可 是 [uv_break] 除 了 考 试 以 外 ， 或 是 在 写 作 阅 读 以 外 [uv_break] ， 在 我 们 这 种 中 国 式 的 哑 巴 英 语 上 [uv_break] ， 我 们 缺 少 是 词 汇 量 么 ？']

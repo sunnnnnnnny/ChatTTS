@@ -90,10 +90,10 @@ def refine_text(
         text = [text]
     
     assert len(text), 'text should not be empty'
-
-    text = [f"[Sbreak]{i}[Pbreak]{prompt}" for i in text]
-    text_token = models['tokenizer'](text, return_tensors='pt', add_special_tokens=False, padding=True).to(device)
-    text_mask = torch.ones(text_token['input_ids'].shape, dtype=bool, device=device)
+    # ['[Sbreak]很多人觉得，想把英语学的好，单词一个不能少。一个个的是死背单词。知道的单词多了当然会是好事。可是除了考试以外，或是在写作阅读以外，在我们中国式的哑巴英语上，我们缺少是词汇量么？[Pbreak]']
+    text = [f"[Sbreak]{i}[Pbreak]{prompt}" for i in text]  # add Sbreak and Pbreak
+    text_token = models['tokenizer'](text, return_tensors='pt', add_special_tokens=False, padding=True).to(device) # text_token[data]: input_ids [1,90] token_type_ids [1,90] attention_mask [1,90]
+    text_mask = torch.ones(text_token['input_ids'].shape, dtype=bool, device=device) # text_mask [1,90] all_true
 
     inputs = {
         'input_ids': text_token['input_ids'][...,None].expand(-1, -1, models['gpt'].num_vq),
@@ -121,5 +121,5 @@ def refine_text(
         max_new_token = max_new_token, 
         infer_text = True,
         **kwargs
-    )
+    )  # results: ids{list:1}  [100,], attentions{list:101}, hiddens{list, 0}
     return result
