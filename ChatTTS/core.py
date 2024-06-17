@@ -58,7 +58,7 @@ class Chat:
         elif source == 'local':
             self.logger.log(logging.INFO, f'Load from local: {local_path}')
             download_path = local_path
-
+        download_path = "/Users/zhangsan/workspace/model_hg_temp/ChatTTS"
         self._load(**{k: os.path.join(download_path, v) for k, v in OmegaConf.load(os.path.join(download_path, 'config', 'path.yaml')).items()}, **kwargs)
         
     def _load(
@@ -160,18 +160,18 @@ class Chat:
             text = self.pretrain_models['tokenizer'].batch_decode(text_tokens)
             if refine_text_only:
                 return text
-            
-        text = [params_infer_code.get('prompt', '') + i for i in text]
+        # self.pretrain_models  dict:  keys: vocos dvae gpt spk_stat decoder tokenizer  lens = 6
+        text = [params_infer_code.get('prompt', '') + i for i in text] # ['[speed_5]很 多 人 觉 得 [uv_break] 哎 [uv_break] ， 想 把 英 语 学 的 好 [uv_break] ， 这 个 单 词 就 是 一 个 不 能 少 。 一 个 个 的 [uv_break] 是 死 背 单 词 [uv_break] 。 那 知 道 的 单 词 多 了 当 然 会 是 好 事 。 可 是 [uv_break] 除 了 考 试 以 外 ， 或 是 在 写 作 阅 读 以 外 [uv_break] ， 在 我 们 这 种 中 国 式 的 哑 巴 英 语 上 [uv_break] ， 我 们 缺 少 是 词 汇 量 么 ？']
         params_infer_code.pop('prompt', '')
         result = infer_code(self.pretrain_models, text, **params_infer_code, return_hidden=use_decoder)
-        
-        if use_decoder:
+        # result: keys: ids->list, [832,4], attentions->list lens=833, hiddens -> list [832,768]
+        if use_decoder:  # yes  [1,768,832]  -> mel_spec->list [1,100,1664]
             mel_spec = [self.pretrain_models['decoder'](i[None].permute(0,2,1)) for i in result['hiddens']]
         else:
             mel_spec = [self.pretrain_models['dvae'](i[None].permute(0,2,1)) for i in result['ids']]
             
         wav = [self.pretrain_models['vocos'].decode(i).cpu().numpy() for i in mel_spec]
-        
+        # wav -> list [1,425728]
         return wav
     
     def sample_random_speaker(self, ):
